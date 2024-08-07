@@ -1,0 +1,42 @@
+version: "2.2"
+
+networks:
+  difo-music.network:
+    driver: bridge
+
+services:
+  mysql:
+    build: ./mysql
+    restart: always
+    container_name: difo-music.mysql
+    platform: linux/amd64
+    tty: true
+    networks:
+      - difo-music.network
+    ports:
+      - "33066:3306"
+    volumes:
+      - "./mysql/config/mysql.cnf:/etc/mysql/conf.d/custom.cnf:ro"
+      - "./mysql/dbdata:/var/lib/mysql"
+    environment:
+      - MYSQL_PASSWORD=root
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=development
+
+  difo-music-api:
+    build: ./php-apache
+    restart: unless-stopped
+    container_name: difo-music.api
+    platform: linux/amd64
+    tty: true
+    depends_on:
+      - mysql
+    networks:
+      - difo-music.network
+    ports:
+      - "8080:80"
+    volumes:
+      - "./../:/var/www/html"
+      - "./logs:/var/log/apache2"
+      - "./php-apache/000-default.conf:/etc/apache2/sites-available/000-default.conf"
+
